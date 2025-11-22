@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serene - Tiffany's Personalized Wellness Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fcfaf6; /* Cream White background */
+            color: #333;
+            min-height: 100vh;
+        }
+
+        .page-container {
+            width: 100%;
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        /* --- Custom Styles for Sophisticated Aesthetic --- */
+        .primary-accent {
+            color: #8b5b53; /* Earthy Terracotta/Khaki */
+        }
+        .bg-primary-accent {
+            background-color: #8b5b53;
+        }
+        .hover\:bg-primary-accent:hover {
+            background-color: #6d4b46;
+        }
+        .text-primary-accent {
+            color: #8b5b53;
+        }
+
+        .service-card {
+            background-color: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s;
+        }
+        .service-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        /* --- Chat View Styles --- */
+        .chat-view-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+        }
+        .chat-container {
+            height: 60vh;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+        .message-bubble {
+            max-width: 85%;
+            padding: 10px 15px;
+            border-radius: 18px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .therapist-bubble {
+            background-color: #f9f6f3;
+            color: #444; 
+            border-bottom-left-radius: 4px;
+        }
+        .user-bubble {
+            background-color: #8b5b53;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #8b5b53;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+
+    <!-- Script 1: UI Interactions (Global Scope) -->
+    <script>
+        // Explicitly attach to window to prevent ReferenceError
+        window.showView = function(viewId) {
+            const views = {
+                'affirmation-view': document.getElementById('affirmation-view'),
+                'chat-view': document.getElementById('chat-view'),
+                'tools': document.getElementById('tools'),
+                'mental-load': document.getElementById('mental-load'),
+                'pathways': document.getElementById('pathways')
+            };
+            
+            // If switching to chat-view, hide dashboard sections
+            if (viewId === 'chat-view') {
+                if(views['affirmation-view']) views['affirmation-view'].classList.add('hidden');
+                if(views['tools']) views['tools'].classList.add('hidden');
+                if(views['mental-load']) views['mental-load'].classList.add('hidden');
+                if(views['pathways']) views['pathways'].classList.add('hidden');
+                if(views['chat-view']) views['chat-view'].classList.remove('hidden');
+                
+                // Enable input if logic is ready
+                const userInput = document.getElementById('user-input');
+                const sendButton = document.getElementById('send-button');
+                // Check specific window property set by module
+                if(window.isAuthReady && userInput && sendButton) {
+                    userInput.disabled = false;
+                    sendButton.disabled = false;
+                    userInput.focus();
+                }
+            } 
+            // If switching back to main dashboard
+            else if (viewId === 'affirmation-view') {
+                if(views['chat-view']) views['chat-view'].classList.add('hidden');
+                if(views['affirmation-view']) views['affirmation-view'].classList.remove('hidden');
+                if(views['tools']) views['tools'].classList.remove('hidden');
+                if(views['mental-load']) views['mental-load'].classList.remove('hidden');
+                if(views['pathways']) views['pathways'].classList.remove('hidden');
+            }
+        };
+
+        // Affirmation Logic
+        const affirmations = [
+            "Your worth is not measured by your productivity. Take a break if you need it.",
+            "It's okay to feel overwhelmed. Remember, you are doing enough right now.",
+            "Take a deep breath. You can handle this, one moment at a time.",
+            "Progress, not perfection, is the goal. Be kind to yourself today.",
+            "Your feelings are valid. What you need matters, prioritize your rest.",
+            "You are stronger than you think. Keep taking those small, positive steps!",
+            "Rest is productive. Allowing yourself the break you deserve is essential self-care."
+        ];
+        
+        let currentAffirmationIndex = 0;
+
+        function updateAffirmation() {
+            const affirmationTextElement = document.getElementById('affirmation-box');
+            if (!affirmationTextElement) return;
+
+            affirmationTextElement.style.opacity = '0';
+            
+            setTimeout(() => {
+                affirmationTextElement.textContent = affirmations[currentAffirmationIndex];
+                currentAffirmationIndex = (currentAffirmationIndex + 1) % affirmations.length;
+                affirmationTextElement.style.opacity = '1';
+            }, 1000);
+
+            setTimeout(updateAffirmation, 15000); 
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            updateAffirmation();
+        });
+    </script>
+</head>
+<body class="p-4">
+
+    <!-- NAVIGATION HEADER -->
+    <nav class="sticky top-0 w-full bg-white bg-opacity-95 backdrop-blur-sm z-10 shadow-md">
+        <div class="page-container flex justify-between items-center py-4">
+            <!-- Personalized Branding (Serene) -->
+            <h2 class="text-2xl font-extrabold text-gray-800 flex items-center">
+                <span class="text-primary-accent mr-2">S</span>erene
+            </h2>
+            <div class="hidden sm:flex space-x-8 text-sm font-semibold">
+                <a href="#tools" class="nav-link text-primary-accent">Tools</a>
+                <a href="#mental-load" class="nav-link text-gray-600">Mental Load</a>
+                <a href="#pathways" class="nav-link text-gray-600">Pathways</a>
+            </div>
+            <button 
+                onclick="window.showView('chat-view')"
+                class="bg-primary-accent text-white px-4 py-2 rounded-full font-semibold hover:bg-primary-accent transition shadow-md text-sm"
+            >
+                Chat with Aura
+            </button>
+        </div>
+    </nav>
+
+    <!-- MAIN APP CONTENT -->
+    <main class="page-container py-12 flex-grow">
+
+        <!-- Personalized Welcome -->
+        <div class="mb-16">
+            <p class="text-primary-accent font-semibold uppercase tracking-widest mb-2 text-sm">Welcome, Tiffany</p>
+            <h1 class="text-5xl font-extrabold leading-tight text-gray-800">
+                <span class="block">Your Dedicated Space for </span> 
+                <span class="block text-primary-accent">Inner Balance</span>
+            </h1>
+        </div>
+        
+        <!-- Section 1: Core Wellness Tools -->
+        <section id="tools" class="mb-20">
+            <div class="flex justify-between items-end mb-8">
+                <h2 class="text-3xl font-serif text-gray-800">Your Core Wellness Tools</h2>
+                <a href="#" class="text-sm text-gray-600 border-b border-gray-400 pb-0.5">All Resources →</a>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div class="service-card text-center p-4 cursor-pointer" onclick="window.showView('chat-view')">
+                    <img src="https://placehold.co/300x200/d7c9c0/555?text=Confidential+Support" alt="Aura Chat" class="w-full h-auto rounded-xl object-cover mb-4" onerror="this.onerror=null;this.src='https://placehold.co/300x200/d7c9c0/555?text=AI+Counselor+Aura';"/>
+                    <h3 class="text-lg font-semibold text-gray-800">Aura AI Support</h3>
+                    <p class="text-sm text-gray-500 mt-1">Private, 24/7 check-ins.</p>
+                </div>
+                <div class="service-card text-center p-4 cursor-pointer">
+                    <img src="https://placehold.co/300x200/f5ebe0/555?text=Focused+Breath+Work" alt="Breathing Guide" class="w-full h-auto rounded-xl object-cover mb-4" onerror="this.onerror=null;this.src='https://placehold.co/300x200/f5ebe0/555?text=Focused+Breath+Work';"/>
+                    <h3 class="text-lg font-semibold text-gray-800">Breathing Guide</h3>
+                    <p class="text-sm text-gray-500 mt-1">Instant calm and focus.</p>
+                </div>
+                <div class="service-card text-center p-4 cursor-pointer">
+                    <img src="https://placehold.co/300x200/b8a799/fff?text=Mind+Dumping" alt="Digital Journaling" class="w-full h-auto rounded-xl object-cover mb-4" onerror="this.onerror=null;this.src='https://placehold.co/300x200/b8a799/fff?text=Digital+Journaling';"/>
+                    <h3 class="text-lg font-semibold text-gray-800">Digital Journaling</h3>
+                    <p class="text-sm text-gray-500 mt-1">Process thoughts quickly.</p>
+                </div>
+                <div class="service-card text-center p-4 cursor-pointer">
+                    <img src="https://placehold.co/300x200/e0e0e0/555?text=Local+Support+Hub" alt="Campus Resources" class="w-full h-auto rounded-xl object-cover mb-4" onerror="this.onerror=null;this.src='https://placehold.co/300x200/e0e0e0/555?text=Local+Support+Hub';"/>
+                    <h3 class="text-lg font-semibold text-gray-800">Campus Resources</h3>
+                    <p class="text-sm text-gray-500 mt-1">Find local peer support.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: Understanding Your Mental Load -->
+        <section id="mental-load" class="mb-20">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-3xl font-serif text-gray-800">Understanding Your Mental Load</h2>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="p-8 rounded-xl bg-[#f0e8e3] flex flex-col justify-center">
+                    <h3 class="text-xl font-bold primary-accent mb-4">Daily Reminder for Tiffany</h3>
+                    <p id="affirmation-box" class="text-2xl font-semibold text-gray-700">It's okay to feel overwhelmed. Remember, you are doing enough right now.</p>
+                    <p class="text-sm mt-4 text-gray-500">These personalized reminders update every few seconds to help re-center your focus.</p>
+                </div>
+                <div class="rounded-xl overflow-hidden shadow-xl">
+                    <img src="https://placehold.co/600x400/d9c7bb/555?text=Quiet+Space+for+Reflection" alt="A quiet space" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='https://placehold.co/600x400/d9c7bb/555?text=Quiet+Space+for+Reflection';"/>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Personalized Focus Tracks -->
+        <section id="pathways" class="mb-20">
+            <div class="flex justify-between items-center mb-12">
+                <h2 class="text-3xl font-serif text-gray-800">Select Your Wellness Pathway</h2>
+            </div>
+            <div class="flex justify-center space-x-8 mb-8 text-lg font-semibold text-gray-500">
+                <span class="text-primary-accent border-b-2 border-primary-accent pb-1">Focus & Clarity</span>
+                <span>Resilience Building</span>
+                <span>Emotional Balance</span>
+            </div>
+            <div class="max-w-4xl mx-auto p-6 md:p-10 rounded-2xl bg-white shadow-2xl flex flex-col md:flex-row gap-8 items-center border border-gray-100">
+                <div class="md:w-1/3 rounded-xl overflow-hidden">
+                    <img src="https://placehold.co/400x500/d19c7c/fff?text=FOCUS" alt="Focus Visualization" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='https://placehold.co/400x500/d19c7c/fff?text=FOCUS';"/>
+                </div>
+                <div class="md:w-2/3">
+                    <h3 class="text-3xl font-extrabold text-gray-800 mb-2">Focus & Clarity Pathway</h3>
+                    <p class="text-lg text-gray-600 mb-4">Designed for 2nd-year students managing high-pressure academics, offering structured mental health routines.</p>
+                    <ul class="space-y-2 text-gray-700 mb-6">
+                        <li class="flex items-start"><span class="text-primary-accent mr-3 text-xl">&bull;</span>Comprehensive weekly scheduling tools.</li>
+                        <li class="flex items-start"><span class="text-primary-accent mr-3 text-xl">&bull;</span>Guided 5-minute pre-study mindfulness sessions.</li>
+                        <li class="flex items-start"><span class="text-primary-accent mr-3 text-xl">&bull;</span>Exclusive access to Aura's "Exam Anxiety" protocol.</li>
+                    </ul>
+                    <span class="text-2xl font-bold text-gray-900 block mb-4">Your Next Step: Start Today</span>
+                    <button class="bg-primary-accent text-white px-8 py-3 rounded-xl font-bold hover:bg-primary-accent transition shadow-lg">Select Focus Pathway</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Aura Chat View (Hidden by Default) -->
+        <div id="chat-view" class="hidden py-8">
+            <div class="chat-view-container flex flex-col">
+                <header class="p-4 bg-primary-accent text-white rounded-t-xl shadow-md flex items-center justify-between">
+                    <div class="flex items-center">
+                        <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-3m-1.77 1.77a8 8 0 10-14.15 0M9 13h6m-3-3v6"></path></svg>
+                        <h1 class="text-lg font-bold">Aura - Counselor Chat</h1>
+                    </div>
+                    <button onclick="window.showView('affirmation-view')" class="text-sm font-semibold hover:text-white transition">&larr; Back to Hub</button>
+                </header>
+                <div id="chat-container" class="chat-container flex-grow p-4 space-y-3"></div>
+                <footer class="p-4 border-t border-gray-200">
+                    <div id="loading-indicator" class="hidden flex justify-start items-center mb-3">
+                        <div class="spinner mr-2"></div>
+                        <span class="text-sm text-gray-500 italic">Aura is typing...</span>
+                    </div>
+                    <div class="flex space-x-3">
+                        <input type="text" id="user-input" placeholder="Tell Aura how you're feeling, Tiffany..." class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-primary-accent focus:border-primary-accent transition duration-150" onkeypress="if(event.key === 'Enter') window.sendMessage()" disabled/>
+                        <button id="send-button" onclick="window.sendMessage()" class="bg-primary-accent hover:bg-primary-accent text-white p-3 rounded-lg shadow-md transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled>Send</button>
+                    </div>
+                </footer>
+            </div>
+        </div>
+    </main>
+
+    <!-- Script 2: Firebase & AI Logic (Module) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const GEMINI_API_KEY = "AIzaSyByI3BV6PDEgNz9wRK6o0079lVQ0gMtAWk"; 
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${GEMINI_API_KEY}`;
+
+        const FIREBASE_CONFIG = {
+             apiKey: "AIzaSyCFe_-fK35zdunRsBNwvKn_G4npLoNRCuU",
+             authDomain: "serene-7131b.firebaseapp.com",
+             projectId: "serene-7131b",
+             storageBucket: "serene-7131b.firebasestorage.app",
+             messagingSenderId: "374728182312",
+             appId: "1:374728182312:web:c2ec077a41c6670179431d"
+        };
+
+        let db;
+        let auth;
+        let userId = null;
+        window.isAuthReady = false;
+        let chatHistory = [];
+        let isProcessing = false;
+        let initialAuraMessage = "Welcome back to Serene, Tiffany. I'm Aura, your Student Support counselor. Thanks for connecting today. How are you navigating the workload of your second year? And what's on your mind that you'd like to chat about?";
+        
+        const systemPrompt = `You are 'Aura,' an experienced, non-judgemental, and highly empathetic mental health counselor/therapist specifically working within a university student support services department, focusing on the unique challenges faced by 2nd-year students like Tiffany. Tiffany is aware that this app is personalized for her.
+Your primary role is to provide a supportive, confidential, and judgment-free space for university students to discuss their well-being, stress, and academic pressures. When responding, gently incorporate the user's name, Tiffany, once per conversation turn if it sounds natural.
+If Tiffany mentions sharing the application link with a friend, validate her desire to share positive resources but gently remind her that her experience with Aura is personalized and private.
+Use a gentle, encouraging, and conversational tone. Your responses should be focused on active listening, validation, and gently guiding the student toward healthy coping strategies (like deep breathing, scheduling, or reaching out to campus resources). 
+Do not provide medical diagnoses or replace professional help. Keep your responses concise (2-4 sentences maximum) to maintain a natural conversation flow.`;
+
+        function displayMessage(text, sender) {
+            const chatContainer = document.getElementById('chat-container');
+            const isUser = sender === 'user';
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `flex ${isUser ? 'justify-end' : 'justify-start'}`;
+            const bubble = document.createElement('p');
+            bubble.className = `message-bubble ${isUser ? 'user-bubble' : 'therapist-bubble'}`;
+            const formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>');
+            bubble.innerHTML = formattedText;
+            messageDiv.appendChild(bubble);
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function initializeChat() {
+            if (chatHistory.length === 0) {
+                displayMessage(initialAuraMessage, 'therapist');
+                chatHistory.push({ role: "model", parts: [{ text: initialAuraMessage }] });
+            }
+        }
+
+        async function fetchWithRetry(url, payload, maxRetries = 3) {
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) throw new Error(response.statusText);
+                    return response.json();
+                } catch (error) {
+                    if (i === maxRetries - 1) throw error;
+                    await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i)));
+                }
+            }
+        }
+
+        async function getTherapistResponse(userPrompt) {
+            const contents = [...chatHistory, { role: "user", parts: [{ text: userPrompt }] }];
+            const payload = { contents: contents, systemInstruction: { parts: [{ text: systemPrompt }] } };
+            try {
+                const result = await fetchWithRetry(apiUrl, payload);
+                return result?.candidates?.[0]?.content?.parts?.[0]?.text || "I'm having trouble responding right now.";
+            } catch (error) {
+                console.error("Gemini Error", error);
+                return "Connection error. Please try again.";
+            }
+        }
+
+        async function sendMessage() {
+            const userInput = document.getElementById('user-input');
+            const sendButton = document.getElementById('send-button');
+            const loadingIndicator = document.getElementById('loading-indicator');
+
+            if (isProcessing) return;
+
+            const userText = userInput.value.trim();
+            if (!userText) return;
+
+            displayMessage(userText, 'user');
+            userInput.value = '';
+            isProcessing = true;
+            userInput.disabled = true;
+            sendButton.disabled = true;
+            loadingIndicator.classList.remove('hidden');
+
+            chatHistory.push({ role: "user", parts: [{ text: userText }] });
+
+            const therapistResponse = await getTherapistResponse(userText);
+            
+            displayMessage(therapistResponse, 'therapist');
+            chatHistory.push({ role: "model", parts: [{ text: therapistResponse }] });
+
+            await saveChatHistory();
+
+            loadingIndicator.classList.add('hidden');
+            userInput.disabled = false;
+            sendButton.disabled = false;
+            userInput.focus();
+            isProcessing = false;
+        }
+        window.sendMessage = sendMessage; 
+
+        function getChatDocRef(appId) {
+            if (!userId || !db) return null;
+            return doc(db, `artifacts/${appId}/users/${userId}/aura_chats/chat_data`);
+        }
+
+        function loadChatHistory(appId) {
+            const chatDocRef = getChatDocRef(appId);
+            if (!chatDocRef) return;
+            onSnapshot(chatDocRef, (doc) => {
+                if (doc.exists()) {
+                    const data = doc.data();
+                    if (data.history && JSON.stringify(data.history) !== JSON.stringify(chatHistory)) {
+                        chatHistory = data.history;
+                        const chatContainer = document.getElementById('chat-container');
+                        chatContainer.innerHTML = '';
+                        chatHistory.forEach(msg => displayMessage(msg.parts[0].text, msg.role === 'user' ? 'user' : 'therapist'));
+                    }
+                } else {
+                    initializeChat();
+                }
+            }, (e) => {
+                console.error("Load Error", e);
+                // Permissions are now assumed fixed, so we log quietly
+            });
+        }
+
+        async function saveChatHistory() {
+            const EXTERNAL_APP_ID = "serene-wellness-hub";
+            const chatDocRef = getChatDocRef(EXTERNAL_APP_ID);
+            if (!chatDocRef) return;
+            try {
+                await setDoc(chatDocRef, { history: chatHistory, lastUpdated: new Date().toISOString() }, { merge: true });
+            } catch (e) { 
+                console.error("Save Error", e); 
+            }
+        }
+
+        async function init() {
+            const userInput = document.getElementById('user-input');
+            const sendButton = document.getElementById('send-button');
+
+            try {
+                const app = initializeApp(FIREBASE_CONFIG);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                if (FIREBASE_CONFIG.apiKey) {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        window.isAuthReady = true;
+                        loadChatHistory("serene-wellness-hub");
+                        
+                        if (!document.getElementById('chat-view').classList.contains('hidden')) {
+                            userInput.disabled = false;
+                            sendButton.disabled = false;
+                        }
+                    }
+                });
+            } catch (e) {
+                console.error("Firebase Init Failed", e);
+                // Fallback for chat if Firebase fails completely
+                window.isAuthReady = true; 
+                if (!document.getElementById('chat-view').classList.contains('hidden')) {
+                    userInput.disabled = false;
+                    sendButton.disabled = false;
+                }
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
